@@ -3,8 +3,10 @@ use std::io::{Write, stderr};
 use std::process::ExitCode;
 use std::{env, io};
 
+use crate::api::fetch_latest_version;
 use crate::artifact::{read_tree, write_as_csv};
 
+mod api;
 mod artifact;
 
 fn print_usage() {
@@ -39,7 +41,12 @@ fn analyze_deps(path: &str) -> ExitCode {
         }
     };
 
-    let flattened = root.flatten();
+    let mut flattened = root.flatten();
+
+    if let Err(err) = fetch_latest_version(&mut flattened) {
+        let _ = writeln!(stderr(), "Failed to call remote API: {}", err);
+        return ExitCode::FAILURE;
+    }
 
     if let Err(err) = write_as_csv(io::stdout(), &flattened) {
         let _ = writeln!(stderr(), "Failed to output: {}", err);

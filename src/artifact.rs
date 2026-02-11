@@ -14,18 +14,20 @@ use std::{
 #[derive(Deserialize, Clone, Debug)]
 pub struct Artifact {
     #[serde(rename = "groupId")]
-    group_id: String,
+    pub group_id: String,
     #[serde(rename = "artifactId")]
-    artifact_id: String,
-    version: String,
+    pub artifact_id: String,
+    pub version: String,
     #[serde(rename = "type")]
-    artifact_type: String,
-    scope: String,
-    classifier: String,
+    pub artifact_type: String,
+    pub scope: String,
+    pub classifier: String,
     #[serde(deserialize_with = "bool_from_string")]
-    optional: bool,
+    pub optional: bool,
     #[serde(default)]
-    children: Vec<Artifact>,
+    pub children: Vec<Artifact>,
+    #[serde(skip)]
+    pub latest_version: String,
 }
 
 impl PartialEq for Artifact {
@@ -100,6 +102,7 @@ fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
             classifier: a.classifier,
             optional: a.optional,
             children: vec![],
+            latest_version: a.latest_version,
         };
         add_artifacts_to_set(a.children, set);
         set.insert(isolated);
@@ -117,8 +120,8 @@ pub fn write_as_csv<W: Write>(writer: W, artifacts: &Vec<Artifact>) -> Result<()
     for a in artifacts {
         writeln!(
             &mut buffered,
-            "{},{},{}",
-            a.group_id, a.artifact_id, a.version
+            "{},{},{},{}",
+            a.group_id, a.artifact_id, a.version, a.latest_version
         )?;
     }
     Ok(())
