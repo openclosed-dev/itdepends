@@ -70,8 +70,8 @@ where
 {
     let s = String::deserialize(deserializer)?;
     match s.as_ref() {
-        "true" => Ok(false),
-        "false" => Ok(true),
+        "true" => Ok(true),
+        "false" => Ok(false),
         other => Err(de::Error::invalid_value(
             Unexpected::Str(other),
             &"true of false",
