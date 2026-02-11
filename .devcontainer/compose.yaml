@@ -1,0 +1,14 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      args:
+        - USERNAME=${USER:?err}
+        - USER_UID=${COMPOSE_USER_ID:-1000}
+        - USER_GID=${COMPOSE_GROUP_ID:-1000}
+    command: sleep infinity
+    volumes:
+      - type: bind
+        source: ../
+        target: /workspaces/itdepends
+        consistency: cached
