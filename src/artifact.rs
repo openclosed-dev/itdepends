@@ -80,32 +80,29 @@ where
 }
 
 impl Artifact {
-    pub fn flatten(&self) -> Vec<Artifact> {
+    pub fn flatten(self) -> Vec<Artifact> {
         let mut set: HashSet<Artifact> = HashSet::new();
-        self.add_children_to_set(&mut set);
+        add_artifacts_to_set(self.children, &mut set);
         let mut flattened: Vec<Artifact> = set.into_iter().collect();
         flattened.sort();
         flattened
     }
+}
 
-    fn add_children_to_set(&self, set: &mut HashSet<Artifact>) {
-        for child in &self.children {
-            child.add_children_to_set(set);
-            set.insert(child.without_children());
-        }
-    }
-
-    fn without_children(&self) -> Artifact {
-        Artifact {
-            group_id: self.group_id.clone(),
-            artifact_id: self.artifact_id.clone(),
-            version: self.version.clone(),
-            artifact_type: self.artifact_type.clone(),
-            scope: self.scope.clone(),
-            classifier: self.classifier.clone(),
-            optional: self.optional,
+fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
+    for a in artifacts {
+        let isolated = Artifact {
+            group_id: a.group_id,
+            artifact_id: a.artifact_id,
+            version: a.version,
+            artifact_type: a.artifact_type,
+            scope: a.scope,
+            classifier: a.classifier,
+            optional: a.optional,
             children: vec![],
-        }
+        };
+        add_artifacts_to_set(a.children, set);
+        set.insert(isolated);
     }
 }
 
