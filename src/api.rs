@@ -1,13 +1,15 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
+use std::error::Error;
 
+use log::info;
 use reqwest::{Url, blocking};
 use serde::Deserialize;
 
 use crate::artifact::Artifact;
 
 pub struct RestClient {
-    inner: blocking::Client
-} 
+    inner: blocking::Client,
+}
 
 #[derive(Deserialize, Debug)]
 struct Doc {
@@ -29,7 +31,6 @@ struct Envelope {
 }
 
 impl RestClient {
-
     const USER_AGENT: &'static str = "reqwest/0.13.2";
     const BASE_URL: &'static str = "https://search.maven.org/solrsearch/select";
 
@@ -37,7 +38,7 @@ impl RestClient {
         let inner = blocking::Client::builder()
             .user_agent(Self::USER_AGENT)
             .build()?;
-        Ok(RestClient{inner})
+        Ok(RestClient { inner })
     }
 
     pub fn get_latest_version(&self, a: &mut Artifact) -> Result<(), Box<dyn Error>> {
@@ -46,8 +47,7 @@ impl RestClient {
         params.insert("rows", "1".to_string());
         params.insert("wt", "json".to_string());
         let url = Url::parse_with_params(Self::BASE_URL, params)?;
-        let resp = self.inner.get(url)
-            .send()?.error_for_status()?;
+        let resp = self.inner.get(url).send()?.error_for_status()?;
         let envelope: Envelope = serde_json::from_reader(resp)?;
         let docs = &envelope.response.docs;
         if docs.len() > 0 {
@@ -60,7 +60,8 @@ impl RestClient {
 pub fn fetch_latest_version(artifacts: &mut Vec<Artifact>) -> Result<(), Box<dyn Error>> {
     let client = RestClient::new()?;
     for a in artifacts {
+        info!("Fetching metadata for {}:{}", a.group_id, a.artifact_id);
         client.get_latest_version(a)?;
     }
-    Ok(())        
+    Ok(())
 }
