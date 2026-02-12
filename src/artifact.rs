@@ -83,11 +83,9 @@ where
 
 impl Artifact {
     pub fn flatten(self) -> Vec<Artifact> {
-        let root_group_id = &self.group_id;
         let mut set: HashSet<Artifact> = HashSet::new();
         add_artifacts_to_set(self.children, &mut set);
         let mut flattened: Vec<Artifact> = set.into_iter().collect();
-        flattened.retain(|a| !a.belongs_to(root_group_id));
         flattened.sort();
         flattened
     }
@@ -101,6 +99,10 @@ impl Artifact {
             } 
         }
         false
+    }
+
+    pub fn is_runtime(&self) -> bool {
+        self.scope == "runtime" || self.scope == "compile" 
     }
 }
 
@@ -133,8 +135,8 @@ pub fn write_as_csv<W: Write>(writer: W, artifacts: &Vec<Artifact>) -> Result<()
     for a in artifacts {
         writeln!(
             &mut buffered,
-            "{},{},{},{}",
-            a.group_id, a.artifact_id, a.version, a.latest_version
+            "{},{},{},{},{}",
+            a.group_id, a.artifact_id, a.version, a.latest_version, a.scope
         )?;
     }
     Ok(())

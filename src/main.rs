@@ -47,7 +47,12 @@ fn analyze_deps(path: &str) -> ExitCode {
         }
     };
 
+    let root_group_id = root.group_id.clone();
+
     let mut flattened = root.flatten();
+
+    flattened.retain(|a | !a.belongs_to(&root_group_id));
+    flattened.retain(|a| a.is_runtime());
 
     if let Err(err) = fetch_latest_version(&mut flattened) {
         error!("Failed to call remote API: {}", err);
