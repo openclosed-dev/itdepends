@@ -83,11 +83,24 @@ where
 
 impl Artifact {
     pub fn flatten(self) -> Vec<Artifact> {
+        let root_group_id = &self.group_id;
         let mut set: HashSet<Artifact> = HashSet::new();
         add_artifacts_to_set(self.children, &mut set);
         let mut flattened: Vec<Artifact> = set.into_iter().collect();
+        flattened.retain(|a| !a.belongs_to(root_group_id));
         flattened.sort();
         flattened
+    }
+
+    pub fn belongs_to(&self, group: &str) -> bool {
+        if self.group_id.starts_with(group) {
+            return if self.group_id.len() > group.len() {
+                self.group_id.chars().nth(group.len()) == Some('.')
+            } else {
+                true
+            } 
+        }
+        false
     }
 }
 

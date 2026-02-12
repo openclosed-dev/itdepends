@@ -12,6 +12,7 @@ pub struct RestClient {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct Doc {
     id: String,
     g: String,
