@@ -56,7 +56,7 @@ impl RestClient {
         let envelope: Envelope = serde_json::from_reader(resp)?;
         let docs = &envelope.response.docs;
         if docs.len() > 0 {
-            a.latest_version = docs[0].latest_version.clone();
+            a.latest_version = Some(docs[0].latest_version.clone());
         }
         Ok(())
     }

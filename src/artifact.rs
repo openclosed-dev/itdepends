@@ -1,8 +1,3 @@
-use serde::{
-    Deserialize,
-    de::{self, Unexpected},
-};
-
 use std::{
     cmp::Ordering,
     collections::HashSet,
@@ -11,23 +6,14 @@ use std::{
     io::{BufWriter, Read, Write},
 };
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Artifact {
-    #[serde(rename = "groupId")]
     pub group_id: String,
-    #[serde(rename = "artifactId")]
     pub artifact_id: String,
     pub version: String,
-    #[serde(rename = "type")]
-    pub artifact_type: String,
     pub scope: String,
-    pub classifier: String,
-    #[serde(deserialize_with = "bool_from_string")]
-    pub optional: bool,
-    #[serde(default)]
     pub children: Vec<Artifact>,
-    #[serde(skip)]
-    pub latest_version: String,
+    pub latest_version: Option<String>,
 }
 
 impl PartialEq for Artifact {
@@ -35,7 +21,6 @@ impl PartialEq for Artifact {
         self.group_id == other.group_id
             && self.artifact_id == other.artifact_id
             && self.version == other.version
-            && self.classifier == other.classifier
     }
 }
 
@@ -47,7 +32,6 @@ impl Ord for Artifact {
             .cmp(&other.group_id)
             .then(self.artifact_id.cmp(&other.artifact_id))
             .then(self.version.cmp(&other.version))
-            .then(self.classifier.cmp(&other.classifier))
     }
 }
 
@@ -62,22 +46,6 @@ impl Hash for Artifact {
         self.group_id.hash(state);
         self.artifact_id.hash(state);
         self.version.hash(state);
-        self.classifier.hash(state);
-    }
-}
-
-fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: de::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    match s.as_ref() {
-        "true" => Ok(true),
-        "false" => Ok(false),
-        other => Err(de::Error::invalid_value(
-            Unexpected::Str(other),
-            &"true of false",
-        )),
     }
 }
 
@@ -116,10 +84,7 @@ fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
             group_id: a.group_id,
             artifact_id: a.artifact_id,
             version: a.version,
-            artifact_type: a.artifact_type,
             scope: a.scope,
-            classifier: a.classifier,
-            optional: a.optional,
             children: vec![],
             latest_version: a.latest_version,
         };
@@ -131,10 +96,11 @@ fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
 pub fn write_as_csv<W: Write>(writer: W, artifacts: &Vec<Artifact>) -> Result<(), Box<dyn Error>> {
     let mut buffered = BufWriter::new(writer);
     for a in artifacts {
+        let latest_version = a.latest_version.as_deref().unwrap_or_default();
         writeln!(
             &mut buffered,
-            "{},{},{},{},{}",
-            a.group_id, a.artifact_id, a.version, a.latest_version, a.scope
+            "{},{},{},{}",
+            a.group_id, a.artifact_id, a.version, latest_version
         )?;
     }
     Ok(())
