@@ -51,7 +51,7 @@ fn analyze_deps(path: &str) -> ExitCode {
 
     let mut flattened = root.flatten();
 
-    flattened.retain(|a | !a.belongs_to(&root_group_id));
+    flattened.retain(|a| !a.belongs_to(&root_group_id));
     flattened.retain(|a| a.is_runtime());
 
     if let Err(err) = fetch_latest_version(&mut flattened) {

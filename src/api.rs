@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 use std::error::Error;
+use std::thread;
+use std::{collections::HashMap, time};
 
 use log::info;
 use reqwest::{Url, blocking};
@@ -31,13 +32,16 @@ struct Envelope {
     response: Response,
 }
 
+static USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
 impl RestClient {
-    const USER_AGENT: &'static str = "reqwest/0.13.2";
     const BASE_URL: &'static str = "https://search.maven.org/solrsearch/select";
 
     pub fn new() -> Result<RestClient, Box<dyn Error>> {
+        let timeout = time::Duration::from_secs(180);
         let inner = blocking::Client::builder()
-            .user_agent(Self::USER_AGENT)
+            .user_agent(USER_AGENT)
+            .timeout(timeout)
             .build()?;
         Ok(RestClient { inner })
     }
@@ -60,9 +64,17 @@ impl RestClient {
 
 pub fn fetch_latest_version(artifacts: &mut Vec<Artifact>) -> Result<(), Box<dyn Error>> {
     let client = RestClient::new()?;
+
+    let mut counter = 0;
+    let time_to_sleep = time::Duration::from_secs(1);
+
     for a in artifacts {
+        if counter > 0 {
+            thread::sleep(time_to_sleep);
+        }
         info!("Fetching metadata for {}:{}", a.group_id, a.artifact_id);
         client.get_latest_version(a)?;
+        counter += 1;
     }
     Ok(())
 }

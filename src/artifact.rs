@@ -96,13 +96,13 @@ impl Artifact {
                 self.group_id.chars().nth(group.len()) == Some('.')
             } else {
                 true
-            } 
+            };
         }
         false
     }
 
     pub fn is_runtime(&self) -> bool {
-        self.scope == "runtime" || self.scope == "compile" 
+        self.scope == "runtime" || self.scope == "compile"
     }
 }
 
