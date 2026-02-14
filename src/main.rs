@@ -7,12 +7,14 @@ use clap::Parser;
 use log::error;
 
 use crate::api::fetch_latest_version;
-use crate::artifact::{read_tree, write_as_csv};
+use crate::artifact::{TreeParser, write_as_csv};
 use crate::logging::init_logger;
+use crate::maven::MavenTreeParser;
 
 mod api;
 mod artifact;
 mod logging;
+mod maven;
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -33,7 +35,7 @@ fn main() -> ExitCode {
 
 impl Command {
     fn run(&self) -> ExitCode {
-        let file = match File::open(&self.input_file) {
+        let mut file = match File::open(&self.input_file) {
             Ok(file) => file,
             Err(err) => {
                 error!("Failed to open the file {:?}: {}", self.input_file, err);
@@ -41,7 +43,8 @@ impl Command {
             }
         };
 
-        let root = match read_tree(file) {
+        let parser = self.tree_parser();
+        let root = match parser.parse(&mut file) {
             Ok(root) => root,
             Err(err) => {
                 error!("Failed to parse JSON: {}", err);
@@ -69,5 +72,9 @@ impl Command {
         }
 
         ExitCode::SUCCESS
+    }
+
+    fn tree_parser(&self) -> Box<dyn TreeParser> {
+        Box::new(MavenTreeParser {})
     }
 }

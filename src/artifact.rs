@@ -8,7 +8,7 @@ use std::{
     collections::HashSet,
     error::Error,
     hash::{Hash, Hasher},
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufWriter, Read, Write},
 };
 
 #[derive(Deserialize, Clone, Debug)]
@@ -106,6 +106,10 @@ impl Artifact {
     }
 }
 
+pub trait TreeParser {
+    fn parse(&self, reader: &mut dyn Read) -> Result<Artifact, Box<dyn Error>>;
+}
+
 fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
     for a in artifacts {
         let isolated = Artifact {
@@ -122,12 +126,6 @@ fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
         add_artifacts_to_set(a.children, set);
         set.insert(isolated);
     }
-}
-
-pub fn read_tree<R: Read>(reader: R) -> Result<Artifact, Box<dyn Error>> {
-    let buffered = BufReader::new(reader);
-    let a = serde_json::from_reader(buffered)?;
-    Ok(a)
 }
 
 pub fn write_as_csv<W: Write>(writer: W, artifacts: &Vec<Artifact>) -> Result<(), Box<dyn Error>> {
