@@ -1,8 +1,9 @@
 use std::fs::File;
-use std::io::{Write, stderr};
+use std::io;
+use std::path::PathBuf;
 use std::process::ExitCode;
-use std::{env, io};
 
+use clap::Parser;
 use log::error;
 
 use crate::api::fetch_latest_version;
@@ -13,56 +14,60 @@ mod api;
 mod artifact;
 mod logging;
 
-fn print_usage() {
-    let _ = writeln!(stderr(), "Usage: itdepends <json file>");
+#[derive(Parser)]
+#[command(version, about)]
+struct Command {
+    input_file: PathBuf,
+    /// Stop fetching metadata from network
+    #[arg(long)]
+    offline: bool,
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() != 2 {
-        print_usage();
-        return ExitCode::from(2);
-    }
+    let command = Command::parse();
 
     init_logger();
 
-    analyze_deps(&args[1])
+    command.run()
 }
 
-fn analyze_deps(path: &str) -> ExitCode {
-    let file = match File::open(path) {
-        Ok(file) => file,
-        Err(err) => {
-            error!("Failed to open the file {}: {}", path, err);
+impl Command {
+    fn run(&self) -> ExitCode {
+        let file = match File::open(&self.input_file) {
+            Ok(file) => file,
+            Err(err) => {
+                error!("Failed to open the file {:?}: {}", self.input_file, err);
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let root = match read_tree(file) {
+            Ok(root) => root,
+            Err(err) => {
+                error!("Failed to parse JSON: {}", err);
+                return ExitCode::FAILURE;
+            }
+        };
+
+        let root_group_id = root.group_id.clone();
+
+        let mut flattened = root.flatten();
+
+        flattened.retain(|a| !a.belongs_to(&root_group_id));
+        flattened.retain(|a| a.is_runtime());
+
+        if !self.offline
+            && let Err(err) = fetch_latest_version(&mut flattened)
+        {
+            error!("Failed to call remote API: {}", err);
             return ExitCode::FAILURE;
         }
-    };
 
-    let root = match read_tree(file) {
-        Ok(root) => root,
-        Err(err) => {
-            error!("Failed to parse JSON: {}", err);
+        if let Err(err) = write_as_csv(io::stdout(), &flattened) {
+            error!("Failed to output: {}", err);
             return ExitCode::FAILURE;
         }
-    };
 
-    let root_group_id = root.group_id.clone();
-
-    let mut flattened = root.flatten();
-
-    flattened.retain(|a| !a.belongs_to(&root_group_id));
-    flattened.retain(|a| a.is_runtime());
-
-    if let Err(err) = fetch_latest_version(&mut flattened) {
-        error!("Failed to call remote API: {}", err);
-        return ExitCode::FAILURE;
+        ExitCode::SUCCESS
     }
-
-    if let Err(err) = write_as_csv(io::stdout(), &flattened) {
-        error!("Failed to output: {}", err);
-        return ExitCode::FAILURE;
-    }
-
-    ExitCode::SUCCESS
 }
