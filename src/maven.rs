@@ -8,7 +8,7 @@ use serde::{
     de::{self, Unexpected},
 };
 
-use crate::artifact::{Artifact, TreeParser};
+use crate::artifact::{Artifact, ArtifactParser};
 
 #[derive(Deserialize, Clone, Debug)]
 #[allow(dead_code)]
@@ -57,12 +57,23 @@ impl Into<Artifact> for Dependency {
     }
 }
 
-pub struct MavenTreeParser {}
+pub struct MavenArtifactParser<R: Read> {
+    reader: BufReader<R>,
+}
 
-impl TreeParser for MavenTreeParser {
-    fn parse(&self, reader: &mut dyn Read) -> Result<Artifact, Box<dyn Error>> {
-        let buffered = BufReader::new(reader);
-        let root: Dependency = serde_json::from_reader(buffered)?;
+impl<R: Read> MavenArtifactParser<R> {
+    pub fn new(reader: R) -> MavenArtifactParser<R> {
+        MavenArtifactParser {
+            reader: BufReader::new(reader),
+        }
+    }
+}
+
+impl<R: Read> ArtifactParser for MavenArtifactParser<R> {
+    fn parse(&mut self) -> Result<Artifact, Box<dyn Error>> {
+        let mut text = String::new();
+        let _ = self.reader.read_to_string(&mut text)?;
+        let root: Dependency = serde_json::from_str(&text)?;
         Ok(root.into())
     }
 }

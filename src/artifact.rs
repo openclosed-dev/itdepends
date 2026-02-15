@@ -3,7 +3,7 @@ use std::{
     collections::HashSet,
     error::Error,
     hash::{Hash, Hasher},
-    io::{BufWriter, Read, Write},
+    io::{BufWriter, Write},
 };
 
 #[derive(Clone, Debug)]
@@ -74,10 +74,6 @@ impl Artifact {
     }
 }
 
-pub trait TreeParser {
-    fn parse(&self, reader: &mut dyn Read) -> Result<Artifact, Box<dyn Error>>;
-}
-
 fn add_artifacts_to_set(artifacts: Vec<Artifact>, set: &mut HashSet<Artifact>) {
     for a in artifacts {
         let isolated = Artifact {
@@ -104,4 +100,8 @@ pub fn write_as_csv<W: Write>(writer: W, artifacts: &Vec<Artifact>) -> Result<()
         )?;
     }
     Ok(())
+}
+
+pub trait ArtifactParser {
+    fn parse(&mut self) -> Result<Artifact, Box<dyn Error>>;
 }
