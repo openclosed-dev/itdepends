@@ -1,8 +1,8 @@
 use std::thread;
 use std::{error::Error, time};
 
-use log::info;
-use reqwest::{Url, blocking};
+use log::{info, warn};
+use reqwest::{StatusCode, Url, blocking};
 use serde::Deserialize;
 
 use crate::artifact::Artifact;
@@ -61,7 +61,20 @@ impl RestClient {
                 .push(&&a.artifact_id)
                 .push("maven-metadata.xml");
         }
-        let resp = self.inner.get(url).send()?.error_for_status()?;
+
+        let result = self.inner.get(url).send()?.error_for_status();
+
+        if let Err(err) = &result {
+            if err.status() == Some(StatusCode::NOT_FOUND) {
+                warn!(
+                    "Not found in the Maven Central {}:{}",
+                    a.group_id, a.artifact_id
+                );
+                return Ok(());
+            }
+        }
+
+        let resp = result?;
         let metadata: Metadata = serde_xml_rs::from_reader(resp)?;
         a.latest_version = Some(metadata.versioning.latest);
         Ok(())
