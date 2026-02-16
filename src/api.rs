@@ -64,20 +64,24 @@ impl RestClient {
 
         let result = self.inner.get(url).send()?.error_for_status();
 
-        if let Err(err) = &result {
-            if err.status() == Some(StatusCode::NOT_FOUND) {
-                warn!(
-                    "Not found in the Maven Central {}:{}",
-                    a.group_id, a.artifact_id
-                );
-                return Ok(());
+        match result {
+            Ok(resp) => {
+                let metadata: Metadata = serde_xml_rs::from_reader(resp)?;
+                a.latest_version = Some(metadata.versioning.latest);
+                Ok(())
+            }
+            Err(err) => {
+                if err.status() == Some(StatusCode::NOT_FOUND) {
+                    warn!(
+                        "Not found in the Maven Central {}:{}",
+                        a.group_id, a.artifact_id
+                    );
+                    Ok(())
+                } else {
+                    Err(err.into())
+                }
             }
         }
-
-        let resp = result?;
-        let metadata: Metadata = serde_xml_rs::from_reader(resp)?;
-        a.latest_version = Some(metadata.versioning.latest);
-        Ok(())
     }
 }
 
