@@ -60,7 +60,7 @@ impl Command {
         self.process_reader(file)
     }
 
-    fn process_reader<R: Read>(&self, reader: R) -> ExitCode {
+    fn process_reader<R: Read + 'static>(&self, reader: R) -> ExitCode {
         let mut parser = self.builder.new_parser(reader);
         let result = parser.parse();
         let root = match result {
@@ -98,7 +98,7 @@ impl Command {
 }
 
 impl Builder {
-    fn new_parser<'a, R: Read + 'a>(&self, reader: R) -> Box<dyn ArtifactParser + 'a> {
+    fn new_parser<R: Read + 'static>(&self, reader: R) -> Box<dyn ArtifactParser> {
         match self {
             Self::Maven => Box::new(MavenArtifactParser::new(reader)),
             Self::Gradle => Box::new(GradleArtifactParser::new(reader)),
