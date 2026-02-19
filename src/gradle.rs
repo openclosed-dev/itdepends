@@ -7,12 +7,12 @@ use std::{
 
 use crate::artifact::{Artifact, ArtifactParser};
 
-pub struct GradleArtifactParser<R: Read> {
-    iter: Peekable<Lines<BufReader<R>>>,
+pub struct GradleArtifactParser<'a> {
+    iter: Peekable<Lines<BufReader<&'a mut dyn Read>>>,
 }
 
-impl<R: Read> GradleArtifactParser<R> {
-    pub fn new(reader: R) -> GradleArtifactParser<R> {
+impl<'a> GradleArtifactParser<'a> {
+    pub fn new(reader: &'a mut dyn Read) -> GradleArtifactParser<'a> {
         let buf_reader = BufReader::new(reader);
         GradleArtifactParser {
             iter: buf_reader.lines().peekable(),
@@ -102,7 +102,7 @@ fn create_root_artifact(children: Vec<Artifact>) -> Artifact {
     }
 }
 
-impl<R: Read> ArtifactParser for GradleArtifactParser<R> {
+impl ArtifactParser for GradleArtifactParser<'_> {
     fn parse(&mut self) -> Result<Artifact, Box<dyn Error>> {
         while let Some(result) = self.iter.next() {
             let line = result?;

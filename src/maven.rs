@@ -57,23 +57,21 @@ impl Into<Artifact> for Dependency {
     }
 }
 
-pub struct MavenArtifactParser<R: Read> {
-    reader: BufReader<R>,
+pub struct MavenArtifactParser<'a> {
+    reader: BufReader<&'a mut dyn Read>,
 }
 
-impl<R: Read> MavenArtifactParser<R> {
-    pub fn new(reader: R) -> MavenArtifactParser<R> {
+impl<'a> MavenArtifactParser<'a> {
+    pub fn new(reader: &'a mut dyn Read) -> MavenArtifactParser<'a> {
         MavenArtifactParser {
             reader: BufReader::new(reader),
         }
     }
 }
 
-impl<R: Read> ArtifactParser for MavenArtifactParser<R> {
+impl ArtifactParser for MavenArtifactParser<'_> {
     fn parse(&mut self) -> Result<Artifact, Box<dyn Error>> {
-        let mut text = String::new();
-        let _ = self.reader.read_to_string(&mut text)?;
-        let root: Dependency = serde_json::from_str(&text)?;
+        let root: Dependency = serde_json::from_reader(&mut self.reader)?;
         Ok(root.into())
     }
 }

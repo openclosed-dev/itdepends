@@ -50,17 +50,17 @@ impl Command {
     }
 
     fn process_file(&self, path: &PathBuf) -> ExitCode {
-        let file = match File::open(path) {
+        let mut file = match File::open(path) {
             Ok(file) => file,
             Err(err) => {
                 error!("Failed to open the file {:?}: {}", self.input_file, err);
                 return ExitCode::FAILURE;
             }
         };
-        self.process_reader(file)
+        self.process_reader(&mut file)
     }
 
-    fn process_reader<R: Read + 'static>(&self, reader: R) -> ExitCode {
+    fn process_reader(&self, reader: &mut dyn Read) -> ExitCode {
         let mut parser = self.builder.new_parser(reader);
         let result = parser.parse();
         let root = match result {
@@ -98,7 +98,7 @@ impl Command {
 }
 
 impl Builder {
-    fn new_parser<R: Read + 'static>(&self, reader: R) -> Box<dyn ArtifactParser> {
+    fn new_parser<'a>(&self, reader: &'a mut dyn Read) -> Box<dyn ArtifactParser + 'a> {
         match self {
             Self::Maven => Box::new(MavenArtifactParser::new(reader)),
             Self::Gradle => Box::new(GradleArtifactParser::new(reader)),
