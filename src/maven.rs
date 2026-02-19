@@ -43,14 +43,14 @@ where
     }
 }
 
-impl Into<Artifact> for Dependency {
-    fn into(self) -> Artifact {
-        let children: Vec<Artifact> = self.children.into_iter().map(|d| d.into()).collect();
+impl From<Dependency> for Artifact {
+    fn from(value: Dependency) -> Self {
+        let children: Vec<Artifact> = value.children.into_iter().map(|d| Self::from(d)).collect();
         Artifact {
-            group_id: self.group_id,
-            artifact_id: self.artifact_id,
-            version: self.version,
-            scope: self.scope,
+            group_id: value.group_id,
+            artifact_id: value.artifact_id,
+            version: value.version,
+            scope: value.scope,
             children: children,
             ..Artifact::default()
         }
@@ -72,6 +72,6 @@ impl<'a> MavenArtifactParser<'a> {
 impl ArtifactParser for MavenArtifactParser<'_> {
     fn parse(&mut self) -> Result<Artifact, Box<dyn Error>> {
         let root: Dependency = serde_json::from_reader(&mut self.reader)?;
-        Ok(root.into())
+        Ok(Artifact::from(root))
     }
 }
