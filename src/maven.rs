@@ -52,7 +52,7 @@ impl Into<Artifact> for Dependency {
             version: self.version,
             scope: self.scope,
             children: children,
-            latest_version: None,
+            ..Artifact::default()
         }
     }
 }

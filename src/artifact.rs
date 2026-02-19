@@ -6,7 +6,7 @@ use std::{
     io::{BufWriter, Write},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Artifact {
     pub group_id: String,
     pub artifact_id: String,

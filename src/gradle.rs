@@ -79,8 +79,7 @@ fn parse_line(line: &str, col: usize) -> Option<Artifact> {
         artifact_id: artifact_id.to_string(),
         version: version.to_string(),
         scope: "runtime".to_string(),
-        children: vec![],
-        latest_version: None,
+        ..Artifact::default()
     })
 }
 
@@ -93,12 +92,9 @@ fn get_entry_level(line: &str) -> usize {
 
 fn create_root_artifact(children: Vec<Artifact>) -> Artifact {
     Artifact {
-        group_id: "".to_string(),
-        artifact_id: "".to_string(),
-        version: "".to_string(),
         scope: "runtime".to_string(),
         children: children,
-        latest_version: None,
+        ..Artifact::default()
     }
 }
 
