@@ -11,8 +11,8 @@ pub struct GradleArtifactParser<'a> {
     iter: Peekable<Lines<BufReader<&'a mut dyn Read>>>,
 }
 
-impl<'a> GradleArtifactParser<'a> {
-    pub fn new(reader: &'a mut dyn Read) -> GradleArtifactParser<'a> {
+impl GradleArtifactParser<'_> {
+    pub fn new<'a>(reader: &'a mut dyn Read) -> GradleArtifactParser<'a> {
         let buf_reader = BufReader::new(reader);
         GradleArtifactParser {
             iter: buf_reader.lines().peekable(),
