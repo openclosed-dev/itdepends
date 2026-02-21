@@ -27,6 +27,8 @@ Options:
 
 ```shell
 cd /path/to/your/project
+# Installs your products into local repository
+mvn install
 mvn org.apache.maven.plugins:maven-dependency-plugin:3.10.0:tree '-DoutputType=json' '-DoutputFile=deps-tree.json'
 itdepends -b maven deps-tree.json
 ```
