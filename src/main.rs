@@ -84,7 +84,7 @@ impl Command {
         if !self.offline
             && let Err(err) = fetch_latest_version(&mut flattened)
         {
-            error!("Failed to call remote API: {}", err);
+            error!("Failed to fetch metadata: {}", err);
             return ExitCode::FAILURE;
         }
 

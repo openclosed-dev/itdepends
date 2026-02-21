@@ -66,8 +66,17 @@ impl RestClient {
 
         match result {
             Ok(resp) => {
-                let metadata: Metadata = serde_xml_rs::from_reader(resp)?;
-                a.latest_version = Some(metadata.versioning.latest);
+                match serde_xml_rs::from_reader::<Metadata, _>(resp) {
+                    Ok(metadata) => {
+                        a.latest_version = Some(metadata.versioning.latest);
+                    }
+                    Err(err) => {
+                        warn!(
+                            "Failed to parse the response for {}:{}: {}",
+                            a.group_id, a.artifact_id, err
+                        );
+                    }
+                }
                 Ok(())
             }
             Err(err) => {
@@ -96,8 +105,12 @@ pub fn fetch_latest_version(artifacts: &mut Vec<Artifact>) -> Result<(), Box<dyn
         }
         info!("Fetching metadata for {}:{}", a.group_id, a.artifact_id);
         client.get_latest_version(a)?;
-        let latest_version = a.latest_version.as_ref().map_or("none", |v| &v);
-        info!("Fetched latest version: {}", latest_version);
+        if let Some(latest_version) = &a.latest_version {
+            info!(
+                "Fetched latest version: {}:{}:{}",
+                a.group_id, a.artifact_id, latest_version
+            );
+        }
     }
     Ok(())
 }
